@@ -24,9 +24,9 @@
   
   이 때, Module S와 L의 앞부분 사이의 매개 변수는 공유되고, 두 모듈의 출력은 하나로 융합되어 다양한 기능적 형태(connection, weighting, and summation)를 취함으로서 목적에 충분한 결과를 낸다. Nr개의 convolution layer가 최종 층이며, 모든 convolution kernel의 크기는 zero padding으로 3x3으로 설정된다.
   
-  SMALL scale : 2 * (NS + NS + Nr) + 1
-  Middle scale : 2 * (NS + NL + Nr) + 1
-  Large scale : 2 * (NL + NL + Nr) + 1
+  SMALL scale : 2 * (NS + NS + Nr) + 1  ,
+  Middle scale : 2 * (NS + NL + Nr) + 1 ,
+  Large scale : 2 * (NL + NL + Nr) + 1  ,
   즉 큰 scale일수록, 더 많은 convolution layer를 쌓는다.
   
   각 계층은 비선형 연산이 없는 하나의 단일필터만 포함하는 마지막 reconstruction layer를 제외하고, 64개의 필터로 구성된다.

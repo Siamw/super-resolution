@@ -1,4 +1,4 @@
-# Image Super-Resolution Using Very Deep Residual Channel Attention Networks
+# Image Super-Resolution Using Very Deep Residual Channel Attention Networks (RCAN)
 
 CNN의 깊이는 SR에 있어서 매우 중요하지만, 네트워크가 깊어질수록 훈련이 어려워진다. 저해상도의 입력들은 low-frequency 정보를 가지고 있고, 
 이는 channel을 통과하면 동일하게 다루어지기 때문에, CNN의 표현력을 방해한다. 이 문제를 해결하기 위해, residual 구조 및 attention 네트워크를 사용한다.
@@ -40,3 +40,13 @@ ill-posed problem인 SR문제를 어떻게 효과적으로 해결할 것인가?
   
 ## RCAN
   ### Network architecture
+  ![RCAN structure](./images/RCAN.png)
+  - 크게 4가지 부분으로 구성된다.
+    1. shallow feature extraction : shallow feature F(0) 추출 위해 오직 하나의 convolution layer 사용
+    2. deep feature extraction by residual in residual (RIR) : F(0)사용하여 진행, 결과물 F(DF)
+    3. upscale module : F(DF)를 upscale하여 f(UP)를 만든다. (up scale module : deconvolution, nearest-neighbor upsampling + convolution, ESPCN 방법 존재)
+    4. reconstruction part
+  
+  I(LR) : RCAN의 input
+  I(SR) : RCAN의 output
+  

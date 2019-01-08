@@ -92,8 +92,8 @@ conv layer kernel 3*3
 
 ## Experimentis
 
-![RCAB](./images/RCAN_result.png)
-![RCAB](./images/RCAN_.png)
+![RCAN](./images/RCAN_result.png)
+![RCAN](./images/RCAN_PSNR.png)
 
 
 ## Conclusion

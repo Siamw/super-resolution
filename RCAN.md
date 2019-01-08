@@ -90,7 +90,7 @@ ill-posed problem인 SR문제를 어떻게 효과적으로 해결할 것인가?
 R L channel attention
 conv layer kernel 3*3
 
-## Experimentis
+## Experiments
 
 ![RCANimg](./images/SCAN_result.png)
 ![RCANchart](./images/RCAN_PSNR.png)

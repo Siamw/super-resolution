@@ -68,7 +68,9 @@ loss of generality 없이, 우리는 Sentinel-2 data를 위한 모델을 제시�
 ![problem_formulation](./images/problem_formulation.png)
 
 이 논문의 방법을 도출하기 위해 **image를 벡터화**하는 것이 편리하다. 
-- 각각의 개별 band의 pixel intensities : vector yi 로 수집, 이는 임의의 고정된 순서로 연결된다. 
+- 각각의 개별 band의 pixel intensities : vector yi 로 수집, 이는 임의의 고정된 순서로 연결(1)된다.
+- 유사하게, 알려지지 않은 output images는 (2)이지만, 모든 대역은 동일한 최대의 해상도 (3)을 갖는다.
+- 따라서,  output bands는 필요하다면 matrix로 변경될 수 있다. (4)
                                                         
 
     

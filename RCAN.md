@@ -100,5 +100,5 @@ conv layer kernel 3*3
 
 - Very Deep Residual Channel Attention
 - RIR : LSC, SSC로  깊게 도달할 수 있게함, 다수의 skip connection을 통해 풍부한 저주파수 정보 우회하여 고주파수 정보 학습을 도움
-- CA : 채널간 상호의존성 고려, 별 기능적으로 조정.
+- CA : 채널간 상호의존성 고려, channel별 기능적으로 조정.
 

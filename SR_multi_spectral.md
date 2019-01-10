@@ -92,5 +92,7 @@ loss of generality 없이, 우리는 Sentinel-2 data를 위한 모델을 제시�
 - 하지만 여전히 ill-conditioned이다.
 - 직접적인 해결책은 noise에 민감하고 크기가 작기 때문에 실용적이지 않다.
 
-#### Estimation of the subspace
+![subspace_representation](./images/subspace_representation.png)
+
+    #### Estimation of the subspace
     

@@ -70,8 +70,27 @@ loss of generality 없이, 우리는 Sentinel-2 data를 위한 모델을 제시�
 이 논문의 방법을 도출하기 위해 **image를 벡터화**하는 것이 편리하다. 
 - 각각의 개별 band의 pixel intensities : vector yi 로 수집, 이는 임의의 고정된 순서로 연결(1)된다.
 - 유사하게, 알려지지 않은 output images는 (2)이지만, 모든 대역은 동일한 최대의 해상도 (3)을 갖는다.
-- 따라서,  output bands는 필요하다면 matrix로 변경될 수 있다. (4)
-                                                        
+- 따라서,  output bands는 필요하다면 matrix (4)로 변경될 수 있고, (5)가 성립한다.
+- 입력 및 출력 이미지는 noise에 따라 관측 모델(6)을 통해 연관된다. 이 때, (7)은 두개의 블록 대각행렬(대각선 이외의 모든 행렬 블록이 영행렬인 블록행렬)이다.
+- 두 행렬의 sub block들은 하나의 스펙트럼 대역에서 작동한다.
+- M : block은 y를 얻기 위한 x sampling을 나타냄
+    1. 즉 block은 고해상도 채널에 대해서는 항등행렬이고, 
+    2. 다른 채널, 즉 항등행렬의 행의 subset에 대해서는 down-sampling(mask) 함수 이다.
+-  B : blur matrix. block-circulant-cirtulant-block(BCCB) 행렬
+    1. 각 블록은 x의 해상도(가장 높은 공간해상도)에서 해당 밴드에 해당하는 point spread function(PSF)와 연관된 2D cyclic convolution을 나타낸다.
+    2. blur는 모든 spectral band에서 다를 수 있으며, 공간적으로 불변하다.
+- ill-posed problem이기 대문에, 식 (6)은 분명히 좋지 않다. 
 
-    
+### Subspace representation
+- 다중 스펙트럼 이미지 데이터는 상관관계가 있으며, 정보를 잃지 않고 더 낮은 차원의 부분 공간으로 투영될 수 있다는 것이 종종 관찰되었다.
+- S2의 13개 bands에 대해, 신호 에너지의 99%이상이 correlation 기반 고윳값 분해의 p=6인 최대 구성요소에 유지된다는 것을 알 수 있다.
+- 차원 감소 : 미지의 수를 상당히 줄이고, 구상된 super-resolution을 위한 암시적 또는 명시적으로 사용된 핵심요소임을 증명한다.
+- 공식적으로, X의 열, 즉 spectral vector는 (8)의 열에 걸친 부분 공간에 존재하므로, (9)와 같이 쓸 수 있다. 여기서 (10)은 U에 대한 표현 계수이고, U는 semi-unitary(반 단위)라고 가정합니다.
+-   행렬의 벡터화는 (11)을 산출하며, 여기서 I는 적절한 차원을 같는 항등행렬이다.
+- 차원 감소화 함께, (6)은 (12)가 된다.
+- 축소된 문제는 pn < L1n1 + L2n2 + L6n6인 이상 더이상 ill-posed가 아니다.
+- 하지만 여전히 ill-conditioned이다.
+- 직접적인 해결책은 noise에 민감하고 크기가 작기 때문에 실용적이지 않다.
+
+#### Estimation of the subspace
     

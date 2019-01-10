@@ -125,4 +125,11 @@ loss of generality 없이, 우리는 Sentinel-2 data를 위한 모델을 제시�
 - 위처럼 분할하면, 각 개별 분제를 훨씬 쉽게 해결할 수 있다.
 - 위 문제의 Augmented Lagrangian : ![Augmented_Lagrangian](./images/Augmented_Lagrangian.png)
 - d1, d2, d3 = scaled된 Lagrange multipliers,  μ>0
-- z에 대한 바로 위 식의 해는 ![sol_respect_z](./images/sol_respect_z.png) 이다.
+- z에 대한 바로 위 식의 해는 ![sol_respect_z](./images/sol_respect_z.png) 이다.(U^⊤ * U = I)
+
+- inverted될 행렬은, Dh, Dv에서 대각선 부분이다.
+- 따라서 z의 각 subspace dim에 대해 개별적으로 풀 수 있다.
+- 계산이 복잡할 수 있기에, 모두 BCCB행렬임을 이용하여 **주파수 영역**에서 해를 계산한다[22].
+
+- v1에 대한 위의 식, v2,3이 구해지는 과정, Algorithm은 다음과 같다.
+![v123_algo](./images/v123_algo.png)

@@ -127,9 +127,39 @@ loss of generality 없이, 우리는 Sentinel-2 data를 위한 모델을 제시�
 - d1, d2, d3 = scaled된 Lagrange multipliers,  μ>0
 - z에 대한 바로 위 식의 해는 ![sol_respect_z](./images/sol_respect_z.png) 이다.(U^⊤ * U = I)
 
-- inverted될 행렬은, Dh, Dv에서 대각선 부분이다.
+- inverted될 행렬은, Dh, Dv에서 대각선 부분이다. 이 때, 각각의 대각선 block, 즉 부분공간의 각 차원에 대해 독립적으로 행해진다.
 - 따라서 z의 각 subspace dim에 대해 개별적으로 풀 수 있다.
 - 계산이 복잡할 수 있기에, 모두 BCCB행렬임을 이용하여 **주파수 영역**에서 해를 계산한다[22].
 
-- v1에 대한 위의 식, v2,3이 구해지는 과정, Algorithm은 다음과 같다.
+- v1에 대한 위의 식, v2,3이 구해지는 과정, 완전한 최적화 기법 Algorithm은 다음과 같다.
 ![v123_algo](./images/v123_algo.png)
+- solution은 v2 및 v3과 관련하여 분리되며, 각 요소에 대해 다음과 같이 계산할 수 있다.
+![v2v3](./images/v2v3.png)
+i는 z의 i번째 이미지를, j는 각 픽셀을 나타낸다.
+
+- 최종 update 된  Lagrange multipliers
+![final_LM](./images/final_LM.png)
+
+- 문제가 convex(볼록)하기 때문에, 매개변수 v1, v2, v3, d1, d2 및 d3의 초기 값은 임의로 선택할 수 있다.
+- global minimum에 대한 수렴은 μ > 0에 대해 보장된다.
+
+
+### Adapting the spatial regularisation
+Spatial Regulariser로 사용되는 2차 smoothing의 경우, 불연속점들의 smoothing을 줄이는 것을 위하여 각 pixel에 대한 가중치 w를 도입한다.
+![w](./images/w.png)
+- gmax= max(g(x1), . . . , g(xL1 )), 이 때, max연산자는 pixel당 적용
+- p()는 Prewitt image gradient magnitude이다.
+- w는 강한 에너지는 downweighted되고, 0.5보다 작은 값을 잘라버리는 것을 발견하였고, 따라서 w = max(0.5, w) 이 식을 적용하여 결과를 향상시켰다.
+
+- 이 정의에 따라, subspace coefficients는 다른 범위를 갖는다. 처음 몇 차원(기본 벡터)는 대부분의 energy(정보)를 포함하므로 상대적으로 noise의 영향을 덜 받는 반면, 마지막 차원에서는 noise의 영향이 지배적이다.
+- 따라서 점진적으로 정규화를 강력하게 할 필요가 있다.
+- 경험적으로 정규식을 q ( R^p)로 재조정하면 된다.
+- 이 단계에서 제일 좋은 q =[1 1.5 4 8 15 15 20]이다.
+
+- 우리는 schema 기반 principal component를 사용해보려했지만, 모든 test dataset에서 잘 수행되는 경험적인 접근법 (heuristic approach)에 비해 더 나은 결과를 이끌어내지는 못했다
+
+
+### Implementation details
+
+
+

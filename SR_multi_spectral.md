@@ -87,7 +87,7 @@ loss of generality 없이, 우리는 Sentinel-2 data를 위한 모델을 제시�
 - 차원 감소 : 미지의 수를 상당히 줄이고, 구상된 super-resolution을 위한 암시적 또는 명시적으로 사용된 핵심요소임을 증명한다.
 - 공식적으로, X의 열, 즉 spectral vector는 (8)의 열에 걸친 부분 공간에 존재하므로, (9)와 같이 쓸 수 있다. 여기서 (10)은 U에 대한 표현 계수이고, U는 semi-unitary(반 단위)라고 가정합니다.
 -   행렬의 벡터화는 (11)을 산출하며, 여기서 I는 적절한 차원을 같는 항등행렬이다.
-- 차원 감소화 함께, (6)은 (12)가 된다.
+- 차원 감소와 함께, (6)은 (12)가 된다.
 - 축소된 문제는 pn < L1n1 + L2n2 + L6n6인 이상 더이상 ill-posed가 아니다.
 - 하지만 여전히 ill-conditioned이다.
 - 직접적인 해결책은 noise에 민감하고 크기가 작기 때문에 실용적이지 않다.
@@ -108,5 +108,17 @@ loss of generality 없이, 우리는 Sentinel-2 data를 위한 모델을 제시�
     
 ## Proposed Solution
 ![optimisation](./images/optimisation.png)
-우리는 위 최적화 문제를 풀어야 한다.
+우리는 위 최적화 문제를 풀어야 한다. 
+- 앞부분은 위에서 계속 이야기했던 수식이며, 
+- 뒷부분은 regularization strength와 regularization term이다. 
+- w,q = weight, 뒤에서 자세히 설명
+- Dh,Dv(R^(Ln*Ln)) = z에 있는 이미지의 수평 및 수직 미분을 근사하는 두 개의 각각 identical block을 가지는 block diagonal linear operators
+- 단순화를 위해, 이 행렬들을 cyclic convolution로서의 주기적인 경계 조건을 가지고 다룬다.
+![regular_term](./images/regularizationTerm.png)
+- 정규 표현식에서는 위 식과 같은 2차 형식을 선택하는데, 여기서 i는 subspace dim에서 실행되고, j는 basis vector i에 대한 모든 픽셀에서 실행된다.
+- Hh, Hv ( R^(n*n))은 finite difference operators Dh, Dv의 단위(I)블록
+- Dh = I ⊗ Hh, Dv =I⊗Hv 가 된다. 
 
+ 최종적으로 풀어야하는 맨 위 식을 풀기 위해서, ADMM 대신 C-SALSA를 이용한다. 
+    - ADMM :
+    - C-SALSA : 

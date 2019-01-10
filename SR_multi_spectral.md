@@ -94,5 +94,19 @@ loss of generality 없이, 우리는 Sentinel-2 data를 위한 모델을 제시�
 
 ![subspace_representation](./images/subspace_representation.png)
 
-    #### Estimation of the subspace
+**Estimation of the subspace**
+    - 부분공간 U를 계산하려면, 각각 span(X)에 대응하는 X에 접근해야한다.
+    - 하지만 우리는 blur되고 downsampling된 X, 즉 y만 가지고 있다.
+    - Q (13) : 2D cyclic convolution을 나타내는 blurring matrix   
+    - 목적 : X, XQ의 blurred 버전을 사용하여  span(X)를 추정
+    - 이 목적의 주된 동기는,  X columns와 rank(Q)≥ p의 선형조합이라는 것을 감안할 때,blurring operator Q가 span(X)에 영향을 미치지 않는다,즉 span(X)=span(XQ) 라는 것이다.
+    - 이를 위해, 1) y의 모든 band를 bicubic interpolation으로 동일한 high resolution으로 upsampling하고, 2) 모든 band의 blur가 가장 강한 blur와 동등하게 되도록 각 밴드를 흐리게 처리한다. 이 이미지는 XQ의 최적 근사치 역할을 한다.
+    - 다음으로, 흐린 데이터에 대해 특이 값 분해 분석 진행
+    - 특이값이 내림차순으로 존재할 때, 왼쪽부터 p개의 특이값을 U의 columns로 유지
+    - 이 방법으로, U의 column과 x의 column이 동일한 부분공간에 걸쳐있다고 가정
     
+    
+## Proposed Solution
+![optimisation](./images/optimisation.png)
+우리는 위 최적화 문제를 풀어야 한다.
+

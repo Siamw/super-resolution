@@ -120,5 +120,9 @@ loss of generality 없이, 우리는 Sentinel-2 data를 위한 모델을 제시�
 - Dh = I ⊗ Hh, Dv =I⊗Hv 가 된다. 
 
  최종적으로 풀어야하는 맨 위 식을 풀기 위해서, ADMM 대신 C-SALSA를 이용한다. 
-    - ADMM :
-    - C-SALSA : 
+- ADMM :
+- C-SALSA :  ![CSALSA](./images/CSALSA.png)
+- 위처럼 분할하면, 각 개별 분제를 훨씬 쉽게 해결할 수 있다.
+- 위 문제의 Augmented Lagrangian : ![Augmented_Lagrangian](./images/Augmented_Lagrangian.png)
+- d1, d2, d3 = scaled된 Lagrange multipliers,  μ>0
+- z에 대한 바로 위 식의 해는 ![sol_respect_z](./images/sol_respect_z.png) 이다.

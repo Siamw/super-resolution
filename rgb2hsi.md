@@ -8,10 +8,10 @@
 
 
 
-**generate_train.m**
+**generate_train.m**  
 data를 **ycbcr로 만들고**, 상하좌우 filp, rotate, downsize하고, scale별로 resize 할 수 있도록 crop 뒤 imresize를 bicubic으로 진행한다.  이 때, stride크기로 data를 나누어 sub화시켜 저장하고, 순서를 섞어 각각 data(bicubic image)와 label image(hr image)로 저장한다. 이후 이 data를 HDF5로 저장한다.(train.h5)
-
-**->HSI로 만들도록 바꾸어 train 시킨다.**
+  
+**->HSI로 만들도록 바꾸어 train 시킨다.**  
 
 ~~~
 clear;close all;
@@ -136,8 +136,8 @@ h5disp(savepath);
 ~~~
 
 
-**generate_test_mat.m** 
-YCbCr로 data의 mat 생성
+**generate_test_mat.m**   
+YCbCr로 data의 mat 생성  
 ~~~
 clear;close all;
 %% settings
@@ -187,33 +187,32 @@ end
 ~~~
 
 
-**main_vdsr.py**
-train시, dataset은 generate_train.m으로 만들어진 train.h5 file로 사용된다.
-만들어진 dataset으로 model에 따라 train을 진행한다.
+**main_vdsr.py**  
+train시, dataset은 generate_train.m으로 만들어진 train.h5 file로 사용된다.  
+만들어진 dataset으로 model에 따라 train을 진행한다.  
 
 
 
-**eval.py**
-generate_test_mat.m에서 만들어낸 metadata로, eval.py를 돌려 PSNR예측한다. (즉 eval.py를 돌리기 이전, 아마 main_vdsr.py에서 metadata를 만들어내는 코드가 있을 것이다.)
+**eval.py**  
+generate_test_mat.m에서 만들어낸 metadata로, eval.py를 돌려 PSNR예측한다. (즉 eval.py를 돌리기 이전, 아마 main_vdsr.py에서 metadata를 만들어내는 코드가 있을 것이다.)  
 
-_mat file의 groundtruth와 bicubic의 Y성분 metadata를 받아와서 float형태로 바꾸어 저장한다.
-이후 두개(gt and b)로 bicubic의 PSNR을 계산하여 bicubic psnr의 avg를 구한다.
+_mat file의 groundtruth와 bicubic의 Y성분 metadata를 받아와서 float형태로 바꾸어 저장한다.  
+이후 두개(gt and b)로 bicubic의 PSNR을 계산하여 bicubic psnr의 avg를 구한다.  
 
-이 때, im_input은 bicubic y image를 255로 나눈 것으로, 이를 model에 넣고 돌려 HR을 생성해낸다. 
+이 때, im_input은 bicubic y image를 255로 나눈 것으로, 이를 model에 넣고 돌려 HR을 생성해낸다.   
 
-im_h_y는 high resolution Y 값으로, model(im_input = im_n_y/255)의 0번째 값이다.
-이후 다시 255를 곱해주고, 0 미만 255 초과 값은 0또는 255로 만들어준다. & im_h_y = im_h_y[0,:,;]
+im_h_y는 high resolution Y 값으로, model(im_input = im_n_y/255)의 0번째 값이다.  
+이후 다시 255를 곱해주고, 0 미만 255 초과 값은 0또는 255로 만들어준다. & im_h_y = im_h_y[0,:,;]  
 
-이 때, groundtruth와 model을 거쳐 나온 hr을 가지고 PSNR을 계산한다.
-
-
-**demo.py**
-Set5에서 gt, b data를 받아온다.
-이 때, im_input은 im_b_y/255 이고, model에 집어넣어 data를 구한다.(자세한 설명은 아래 eval.py)
-이후 YCbCr 을 RGB로 변환하여 결과를 저장한다. 
+이 때, groundtruth와 model을 거쳐 나온 hr을 가지고 PSNR을 계산한다.  
 
 
-**modcrop.m**
+**demo.py**  
+Set5에서 gt, b data를 받아온다.  
+이 때, im_input은 im_b_y/255 이고, model에 집어넣어 data를 구한다.(자세한 설명은 아래 eval.py)  
+이후 YCbCr 을 RGB로 변환하여 결과를 저장한다.   
+
+**modcrop.m**  
 ~~~
 function imgs = modcrop(imgs, modulo)
 % make sz that can divided into modulo
@@ -231,7 +230,7 @@ imgs = imgs(1:sz(1), 1:sz(2),:);
 end
 ~~~
 
-
+  
 
 
 function hsi = rgb2hsi(rgb)

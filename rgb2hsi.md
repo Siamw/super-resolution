@@ -283,4 +283,4 @@ hsi = cat(3, H, S, I);
 
 
 
-![havetochange](./images/havetochange/jpeg)
+![havetochange](./images/havetochange.jpeg)

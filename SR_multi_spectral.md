@@ -160,6 +160,27 @@ Spatial Regulariser로 사용되는 2차 smoothing의 경우, 불연속점들의
 
 
 ### Implementation details
+- 이 방법은 각 밴드의 PSF가 필요하다.
+- B에 포함된 Gaussian blur(sdf)의 분산은 각 band마다 다르며, ESA에서 meta data의 일부로 제공하는 보정된 MTF(Modulation Transfer Function)에서 계산된다.
+![sdf](./images/sdf.png)
+- 해상도에 따라 i=1,2,6 이고 , 가장 높은 해상도를 가진 band는 sdf=0을 갖는 것으로 가정
+- estimation은 작은 blur의 변화에 민감하지 않다. 
+- 더 나은 수치 조절을 위해 처리 전 이미지를 normalize(정규화)하여 mean squared intensitiy를 1로 한다.(추후 질적 결과에 대해서는 실행 취소)
+- B와 행렬 Dh, Dv는 주기적인 경계조건을 갖는다. 여기서 유래한 artifact를 억제하기 위해 18 pixel의 경계선을 제거한다. 
+- subspace dim은 모든 실험에서 spectral 가변성을 포착할 수 있으므로 p=7로 설정된다.
+- μ = 0.2는 전체 처리에 대해 일정하게 유지
+- 가중치 w의 정규화는 σs =1로 설정
+- optimizer의 수렴 기준으로, 변수 분할과 관련된 잔차가 0.001아래로 떨어질 때 까지, 또는 최대 200회 반복
+- 크기가 180x180 pixel인 이미지의 경우 프로그램은  Intel Xeon E5 3.2 GHz CPU에서 평균 10초 미만으로 실행
 
 
+## Experimental Results
+- Quality indices
+- Baselines
+### Simulated data
+### Real Sentinel-2 data
 
+## Conclusions
+이 논문은, 현대 multi spectral satellite sensor에 다른 해상도를 다루는 새로운 방법을 제시하였다. 
+입력 해상도와 상관 없이, 모든 체널의 정보를 하나로 결합하여 최적화한다.
+모델은 효율적인 구조를 가지고있으며, 중복되지 않는 여러 고해상도 band의 고주파수 정보를 전체 데이터 큐브로 전송하여, 모든 저해상도 채널을 최고 해상도로 만든다. 

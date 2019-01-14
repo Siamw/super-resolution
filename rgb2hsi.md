@@ -279,3 +279,8 @@ I = (r + g + b)/3;
 
 % Combine all three results into an hsi image.
 hsi = cat(3, H, S, I);
+
+
+
+
+~[havetochange](./images/havetochange/jpeg)

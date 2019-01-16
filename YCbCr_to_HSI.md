@@ -244,7 +244,7 @@ generate_test_mat.m와 같이 RGB2HSI, HSI2RGB를 만들어주어야 한다.
 함수는 다음과 같다.  
 * RGB2HSI
 ~~~
-def RGB2HSI(rgb)
+def RGB2HSI(rgb) :
 rgb = rgb.astype(float);
 r = rgb(:, :, 1);
 g = rgb(:, :, 2);
@@ -271,7 +271,7 @@ return HSI
 
 * HSI2RGB
 ~~~
-def HSI2RGB(h_i,b_hsi) # H,S 성분은 im_b_hsi와 동일하다.
+def HSI2RGB(h_i,b_hsi) :# H,S 성분은 im_b_hsi와 동일하다.
 # 즉 변경된 i 성분을 가지고 super resolution을 진행하는 것!
 h = b_hsi(:,:,1);
 s = b_hsi(:,:,2);

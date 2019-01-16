@@ -228,10 +228,10 @@ end
 ## eval.py
 코드의 큰 변화는 없고, 변수명 정도만 변경하였다. 코드는 생략하겠다.  
 * YCbCr 사용하였을 때의 evaluation  
-![YCbCrEval](../images/ycbcr_eval.png)  
+![YCbCrEval](./images/ycbcr_eval.png)  
   
 * YCbCr 사용하였을 때의 evaluation  
-![HSIEval](../images/hsi_eval.png)
+![HSIEval](./images/hsi_eval.png)
 
 
 ## demo.py

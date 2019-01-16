@@ -281,6 +281,3 @@ I = (r + g + b)/3;
 hsi = cat(3, H, S, I);
 
 
-
-
-![havetochange](./images/havetochange.jpeg)

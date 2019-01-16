@@ -246,9 +246,9 @@ generate_test_mat.m와 같이 RGB2HSI, HSI2RGB를 만들어주어야 한다.
 ~~~
 def RGB2HSI(rgb) :
 rgb = rgb.astype(float);
-r = rgb(:, :, 1);
-g = rgb(:, :, 2);
-b = rgb(:, :, 3);
+r = rgb[:, :, 0];
+g = rgb[:, :, 1];
+b = rgb[:, :, 2];
 
 h= math.acos((((r-g)+(r-b))*(0.5))/(((r-g)**2+(r-b)*(g-b))**(0.5)))
 
@@ -262,19 +262,19 @@ S= 1 - 3/(r+g+b)*min(r,g,b)
 I=(R+G+B)/3;
 
 HSI = zeros(size(rgb))
-HSI(:,:,1) = H;
-HSI(:,:,2) = S;
-HSI(:,:,3) = I;
+HSI[:,:,1] = H;
+HSI[:,:,2] = S;
+HSI[:,:,3] = I;
 
 return HSI
 ~~~
 
 * HSI2RGB
 ~~~
-def HSI2RGB(h_i,b_hsi) :# H,S 성분은 im_b_hsi와 동일하다.
+def HSI2RGB(h_i,b_hsi) : # H,S 성분은 im_b_hsi와 동일하다.
 # 즉 변경된 i 성분을 가지고 super resolution을 진행하는 것!
-h = b_hsi(:,:,1);
-s = b_hsi(:,:,2);
+h = b_hsi[:,:,1];
+s = b_hsi[:,:,2];
 i = h_i;
 
 if h >=0 and h<120 :
@@ -293,10 +293,15 @@ B = i(1 + (  ( s * math.cos(h) ) / ( math.cos(60-h) ) ) );
 R = 3*i - (G+B);
 
 RGB = zeros(size(b_hsi))
-RGB(:,:,1) = R;
-RGB(:,:,2) = G;
-RGB(:,:,3) = B;
+RGB[:,:,0] = R;
+RGB[:,:,1] = G;
+RGB[:,:,2] = B;
 return
 ~~~
 
-아직 코드를 돌려보는중이라 결과는 없다. 
+현재  
+h= math.acos((((r-g)+(r-b))*(0.5))/(((r-g)**2+(r-b)*(g-b))**(0.5)))   
+TypeError: only size-1 arrays can be converted to Python scalars   
+
+이 에러가 뜨며 돌아가지 않는다.  
+

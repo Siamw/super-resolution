@@ -241,8 +241,8 @@ generate_test_mat.m와 같이 RGB2HSI, HSI2RGB를 만들어주어야 한다.
 이미지를 불러올 때, 바로 HSI space로 불러올 수 없어서, 기존 YCbCr을 사용할때와 다르게  
 이미지를 일단 RGB로 만들어 준 뒤 HSI로 변경하였다.   
   
-함수는 다음과 같다.  
-* RGB2HSI
+처음에 설정한 함수는 다음과 같다.  
+* RGB2HSI (잘못된 코드)
 ~~~
 def RGB2HSI(rgb) :
 rgb = rgb.astype(float);
@@ -296,12 +296,314 @@ RGB = zeros(size(b_hsi))
 RGB[:,:,0] = R;
 RGB[:,:,1] = G;
 RGB[:,:,2] = B;
-return
+return RGB
 ~~~
 
-현재  
+### error fix
+
+~~~
 h= math.acos((((r-g)+(r-b))*(0.5))/(((r-g)**2+(r-b)*(g-b))**(0.5)))   
 TypeError: only size-1 arrays can be converted to Python scalars   
+~~~
+- math.acos 대신 numpy.arccos 사용하여 해결   
 
-이 에러가 뜨며 돌아가지 않는다.  
+~~~
+if b<=g:
+ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
+~~~
+- array의 성분이 다양하기때문에, 어떻게 비교를 해야하는지에서 애매하다고 에러가 나는 것 같다.   
+array의 크기를 구해서, 각각의 성분에 대하여 구별을 하여 픽셀 값을 정할 수 있도록 해주어야겠다.
+
+
+R :  [[ 19.  19.  15. ... 107. 124. 139.]
+[ 19.  18.  13. ... 132. 146. 157.]
+[ 16.  15.  11. ... 146. 148. 142.]. 
+...  
+[156.  88. 123. ...  27.  34.  39.]
+[166.  96. 110. ...  27.  34.  39.]
+[172. 106. 101. ...  27.  34.  39.]]  
+G :  [[ 40.  39.  35. ... 135. 149. 163.]
+[ 38.  37.  32. ... 159. 172. 182.]
+[ 35.  34.  30. ... 171. 173. 168.]  
+...  
+[167.  93. 124. ...  87.  88.  88.]
+[177. 101. 111. ...  87.  89.  88.]
+[183. 111. 102. ...  87.  90.  89.]]  
+B :  [[ 18.  17.  15. ...  76. 104. 131.]
+[ 16.  15.  12. ... 122. 147. 165.]
+[ 13.  12.  10. ... 154. 152. 140.]   
+...  
+[118.  41.  68. ...  27.  29.  31.]
+[128.  49.  55. ...  25.  26.  27.]
+[134.  59.  46. ...  23.  22.  24.]].  
+  
+    
+이후 array를 사진으로 나타낼 수 없다는 에러가 생겼고, Image.fromarray()함수를 사용하였으나 아래 에러가 또 나타났다. 
+~~~
+AttributeError: 'NoneType' object has no attribute '__array_interface__'
+~~~
+- 여러 방법으로 array를 image로 바꾸려고 하고 있으나, 게속 NoneType error가 뜬다. 
+
+- im_h 에 값이 들어가지 않았다. ( print의 결과 = None)
+
+-  return 문제였다. (해결)
+
+
+
+
+
+### HSI output
+demo.py
+~~~
+import argparse, os
+import torch
+from torch.autograd import Variable
+from scipy.ndimage import imread
+from PIL import Image
+import numpy as np
+import time, math
+import matplotlib.pyplot as plt
+from functools import partial
+import pickle
+import math
+import numpy
+import PIL
+from PIL import Image
+import cv2
+
+pickle.load = partial(pickle.load, encoding="latin1")
+pickle.Unpickler = partial(pickle.Unpickler, encoding="latin1")
+
+
+parser = argparse.ArgumentParser(description="PyTorch VDSR Demo")
+parser.add_argument("--cuda", action="store_true", help="use cuda?")
+parser.add_argument("--model", default="model/model_epoch_50.pth", type=str, help="model path")
+parser.add_argument("--image", default="butterfly_GT", type=str, help="image name")
+parser.add_argument("--scale", default=4, type=int, help="scale factor, Default: 4")
+parser.add_argument("--gpus", default="0", type=str, help="gpu ids (default: 0)")
+
+def PSNR(pred, gt, shave_border=0):
+height, width = pred.shape[:2]
+pred = pred[shave_border:height - shave_border, shave_border:width - shave_border]
+gt = gt[shave_border:height - shave_border, shave_border:width - shave_border]
+imdff = pred - gt
+rmse = math.sqrt(np.mean(imdff ** 2))
+if rmse == 0:
+return 100
+return 20 * math.log10(255.0 / rmse)
+
+
+
+def RGB2HSI(rgb):
+rgb = np.array(rgb.astype(float));
+r = rgb[:, :, 0];
+g = rgb[:, :, 1];
+b = rgb[:, :, 2];
+
+
+rs = len(r)
+#gs = len(g)
+#bs = len(b)
+
+rs1 = len(r[0])
+#gs1 = len(g[0])
+#bs1 = len(b[0])
+
+
+H = numpy.zeros([len(r),len(r[0])])
+S = numpy.zeros([len(r),len(r[0])])
+I = numpy.zeros([len(r),len(r[0])])
+p = numpy.zeros([len(r),len(r[0])])
+q = numpy.zeros([len(r),len(r[0])])
+w = numpy.zeros([len(r),len(r[0])])
+h = numpy.zeros([len(r),len(r[0])])
+
+
+for i in range(0, rs) :
+for j in range(0, rs1) :
+p[i][j] = ((r[i][j]-g[i][j])+(r[i][j]-b[i][j]))*(0.5)
+q[i][j] = ((r[i][j]-g[i][j])**2+(r[i][j]-b[i][j])*(g[i][j]-b[i][j]))**(0.5)
+w[i][j]=(((r[i][j]-g[i][j])+(r[i][j]-b[i][j]))*(0.5))/(((r[i][j]-g[i][j])**2+(r[i][j]-b[i][j])*(g[i][j]-b[i][j]))**(0.5))
+
+h[i][j] = numpy.arccos(w[i][j])
+
+I[i][j]=(r[i][j]+g[i][j]+b[i][j])/3
+S[i][j]= 1 - 3/(r[i][j]+g[i][j]+b[i][j])*min(r[i][j],g[i][j],b[i][j])
+
+
+if b[i][j]<=g[i][j]:
+H[i][j] = h[i][j]
+else:
+H = 360-h
+
+
+
+HSI = numpy.zeros([len(H),len(H[0]),4])
+HSI[:,:,1] = H;
+HSI[:,:,2] = S;
+HSI[:,:,3] = I;
+
+return HSI
+
+def HSI2RGB(h_i,b_hsi): # H,S 성분은 im_b_hsi와 동일하다.
+# 즉 변경된 i 성분을 가지고 super resolution을 진행하는 것!
+h = b_hsi[:,:,1];
+s = b_hsi[:,:,2];
+i = h_i;
+
+
+hs = len(h)
+hs1 = len(h[0])
+
+R = numpy.zeros([len(h),len(h[0])])
+G = numpy.zeros([len(h),len(h[0])])
+B = numpy.zeros([len(h),len(h[0])])
+
+
+for k in range(0, hs) :
+for j in range(0, hs1) :
+if h[k][j] >=0 and h[k][j]<120:
+B[k][j] = i[k][j]*(1-s[k][j]);
+R[k][j] = i[k][j]*(1 + (  ( s[k][j] * math.cos(h[k][j]) ) / ( math.cos(60-h[k][j]) ) ) );
+G[k][j] = 3*i[k][j] - (R[k][j]+B[k][j]);
+elif h[k][j]>=120 and h[k][j]<240:
+h[k][j] = h[k][j]-120;
+R[k][j] = i[k][j]*(1-s[k][j]);
+G[k][j] = i[k][j]*(1 + (  ( s[k][j] * math.cos(h[k][j]) ) / ( math.cos(60-h[k][j]) ) ) );
+B[k][j] = 3*i[k][j] - (R[k][j]+G[k][j])
+elif h[k][j]>=240 and h[k][j]<=360:
+h[k][j] = h[k][j]-240;
+G[k][j] = i[k][j]*(1-s[k][j]);
+B[k][j] = i[k][j]*(1 + (  ( s[k][j] * math.cos(h[k][j]) ) / ( math.cos(60-h[k][j]) ) ) );
+R[k][j] = 3*i[k][j] - (G[k][j]+B[k][j]);
+
+
+
+
+RGB = numpy.zeros([len(R),len(R[0]),3])
+RGB[:,:,0] = R;
+RGB[:,:,1] = G;
+RGB[:,:,2] = B;
+
+
+
+return RGB
+
+opt = parser.parse_args()
+cuda = opt.cuda
+
+if cuda:
+print("=> use gpu id: '{}'".format(opt.gpus))
+os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpus
+if not torch.cuda.is_available():
+raise Exception("No GPU found or Wrong gpu id, please run without --cuda")
+
+
+model = torch.load(opt.model, map_location=lambda storage, loc: storage,pickle_module=pickle)["model"]
+
+im_gt_rgb = imread("Set5/" + opt.image + ".png", mode="RGB")
+im_b_rgb = imread("Set5/"+ opt.image + "_scale_"+ str(opt.scale) + ".png", mode="RGB")
+
+# make rgb to shi function
+im_gt_hsi = RGB2HSI(im_gt_rgb) # not needed...
+im_b_hsi = RGB2HSI(im_b_rgb) # need to make full high resolution hsi img
+
+
+# RGB to HSI and get I data
+
+
+im_gt_i = im_gt_hsi[:,:,3]
+im_b_i = im_b_hsi[:,:,3]
+
+
+#psnr_bicubic = PSNR(im_gt_i, im_b_i,shave_border=opt.scale)
+
+im_input = im_b_i
+
+im_input = Variable(torch.from_numpy(im_input).float()).view(1, -1, im_input.shape[0], im_input.shape[1])
+
+if cuda:
+model = model.cuda()
+im_input = im_input.cuda()
+else:
+model = model.cpu()
+
+start_time = time.time()
+out = model(im_input)
+elapsed_time = time.time() - start_time
+
+out = out.cpu()
+
+im_h_i = out.data[0].numpy().astype(np.float32)
+
+# im_h_y = im_h_y * 255.
+im_h_i[im_h_i < 0] = 0
+im_h_i[im_h_i > 255.] = 255.
+
+# psnr_predicted = PSNR(im_gt_y, im_h_y[0,:,:], shave_border=opt.scale)
+
+
+# have to make HSI to RGB
+im_h = HSI2RGB(im_h_i[0,:,:], im_b_hsi)
+im_gt = im_gt_rgb
+im_b = im_b_rgb
+
+
+im_h = np.array(im_h)
+im_gt = np.array(im_gt)
+im_b = np.array(im_b)
+
+
+im_b = Image.fromarray(im_b, 'RGB')
+im_gt = Image.fromarray(im_gt, 'RGB')
+im_h = Image.fromarray(im_h, 'RGB')
+
+# svimg=im.fromarray(data.astype('uint8'))
+
+im_b.save("inputBicu.png")
+im_gt.save("groundTruth.png")
+im_h.save("hsiOutput.png")
+~~~
+이렇게 진행하였을 때, 
+![HSI output](./images/hsiOutput.png)
+- 원하는 high resoltuion 사진으로 나오지 않는다...
+- 코드가 잘못된것인지 HSI로 super-resolution을 진행할 수 없는 것인지 확인해봐야겠다.
+  
+- 일단, array를 image로 바꾸는 과정에서 난 에러가 아닐까 생각해서 고쳐보는 중이다. 
+
+------
+
+이미지 출력부분을 다음과 같이 변경한 결과물이다.  
+~~~
+'''
+im_h = np.array(im_h)
+im_gt = np.array(im_gt)
+im_b = np.array(im_b)
+'''
+#print("Scale=",opt.scale)
+#print("PSNR_predicted=", psnr_predicted)
+#print("PSNR_bicubic=", psnr_bicubic)
+#print("It takes {}s for processing".format(elapsed_time))
+
+
+im_b = Image.fromarray(im_b.astype('unit8'))
+im_gt = Image.fromarray(im_gt.astype('unit8'))
+im_h = Image.fromarray(im_h.astype('unit8'))
+
+# svimg=im.fromarray(data.astype('uint8'))
+
+im_b.save("inputBicu.png")
+im_gt.save("groundTruth.png")
+im_h.save("vdsrOutput.png")
+~~~
+![HSI output2](./images/hsiOutput2.png)
+
+------
+
+두 결과로 보아, array를 image로 변경하는 과정에서 코드를 잘 변경하여야할 것 같다. 
+
+
+
+
+
 

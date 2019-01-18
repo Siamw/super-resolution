@@ -602,8 +602,246 @@ im_h.save("vdsrOutput.png")
 
 두 결과로 보아, array를 image로 변경하는 과정에서 코드를 잘 변경하여야할 것 같다. 
 
+bicubic, high resolution, ground truth 행렬을 출력해보니, 순서가 잘못된 것 같기도 하다. 
+
+------
+01/18  
+  
+![demo i ](./images/demo_I.png)    
+  
+i 성분만을 출력한것으로, 해상도가 높아진것을 볼 수 있다. hsi to rgb의 문제인 것 같다.   
+  
+코드 생성시 실수들을 고치고 나니, hsi의 i를 사용한 vdsr을 만드는 것에 성공하였다. ( 1_18.docx)  
+  
+최종 demo.py code  
+~~~
+import argparse, os
+import torch
+from torch.autograd import Variable
+from scipy.ndimage import imread
+from PIL import Image
+import numpy as np
+import time, math
+import matplotlib.pyplot as plt
+from functools import partial
+import pickle
+import math
+import numpy
+import PIL
+from PIL import Image
+import cv2
+
+pickle.load = partial(pickle.load, encoding="latin1")
+pickle.Unpickler = partial(pickle.Unpickler, encoding="latin1")
+
+parser = argparse.ArgumentParser(description="PyTorch VDSR Demo")
+parser.add_argument("--cuda", action="store_true", help="use cuda?")
+parser.add_argument("--model", default="model/model_epoch_50.pth", type=str, help="model path")
+parser.add_argument("--image", default="bird_GT", type=str, help="image name")
+parser.add_argument("--scale", default=2, type=int, help="scale factor, Default: 4")
+parser.add_argument("--gpus", default="0", type=str, help="gpu ids (default: 0)")
+
+pi = 3.14159265358979
+
+def PSNR(pred, gt, shave_border=0):
+height, width = pred.shape[:2]
+pred = pred[shave_border:height - shave_border, shave_border:width - shave_border]
+gt = gt[shave_border:height - shave_border, shave_border:width - shave_border]
+imdff = pred - gt
+rmse = math.sqrt(np.mean(imdff ** 2))
+if rmse == 0:
+return 100
+return 20 * math.log10(255.0 / rmse)
+
+
+def RGB2HSI(rgb):
+rgb = np.array(rgb.astype(float));
+r = rgb[:, :, 0];
+g = rgb[:, :, 1];
+b = rgb[:, :, 2];
+
+rs = len(r)
+# gs = len(g)
+# bs = len(b)
+
+rs1 = len(r[0])
+# gs1 = len(g[0])
+# bs1 = len(b[0])
+
+H = numpy.zeros([len(r), len(r[0])])
+S = numpy.zeros([len(r), len(r[0])])
+I = numpy.zeros([len(r), len(r[0])])
+p = numpy.zeros([len(r), len(r[0])])
+q = numpy.zeros([len(r), len(r[0])])
+w = numpy.zeros([len(r), len(r[0])])
+h = numpy.zeros([len(r), len(r[0])])
+
+for i in range(0, rs):
+for j in range(0, rs1):
+p[i][j] = ((r[i][j] - g[i][j]) + (r[i][j] - b[i][j])) * (0.5)
+q[i][j] = ((r[i][j] - g[i][j]) ** 2 + (r[i][j] - b[i][j]) * (g[i][j] - b[i][j])) ** (0.5)
+w[i][j] = (((r[i][j] - g[i][j]) + (r[i][j] - b[i][j])) * (0.5)) / (
+((r[i][j] - g[i][j]) ** 2 + (r[i][j] - b[i][j]) * (g[i][j] - b[i][j])) ** (0.5))
+
+h[i][j] = numpy.arccos(w[i][j])
+
+I[i][j] = (r[i][j] + g[i][j] + b[i][j]) / 3
+S[i][j] = 1 - 3 / (r[i][j] + g[i][j] + b[i][j]) * min(r[i][j], g[i][j], b[i][j])
+
+if b[i][j] <= g[i][j]:
+H[i][j] = h[i][j]
+else:
+H = 2*pi - h
+
+HSI = numpy.zeros([len(H), len(H[0]), 4])
+HSI[:, :, 1] = H;
+HSI[:, :, 2] = S;
+HSI[:, :, 3] = I;
+
+return HSI
+
+
+def HSI2RGB(h_i, b_hsi):  # H,S 성분은 im_b_hsi와 동일하다.
+# 즉 변경된 i 성분을 가지고 super resolution을 진행하는 것!
+h = b_hsi[:, :, 1];
+s = b_hsi[:, :, 2];
+i = h_i;
+
+hs = len(h)
+hs1 = len(h[0])
+
+R = numpy.zeros([hs, hs1])
+G = numpy.zeros([hs, hs1])
+B = numpy.zeros([hs, hs1])
+
+for k in range(0, hs):
+for j in range(0, hs1):
+if h[k][j] >= 0 and h[k][j] < pi*2/3:
+B[k][j] = i[k][j] * (1 - s[k][j]);
+R[k][j] = i[k][j] * (1 + ((s[k][j] * math.cos(h[k][j])) / (math.cos(pi/3 - h[k][j]))));
+G[k][j] = 3 * i[k][j] - (R[k][j] + B[k][j]);
+elif h[k][j] >= pi*2/3 and h[k][j] < pi*4/3:
+h[k][j] = h[k][j] - pi*2/3;
+R[k][j] = i[k][j] * (1 - s[k][j]);
+G[k][j] = i[k][j] * (1 + ((s[k][j] * math.cos(h[k][j])) / (math.cos(pi/3 - h[k][j]))));
+B[k][j] = 3 * i[k][j] - (R[k][j] + G[k][j])
+elif h[k][j] >= pi*4/3 and h[k][j] <= pi*2:
+h[k][j] = h[k][j] - pi*4/3;
+G[k][j] = i[k][j] * (1 - s[k][j]);
+B[k][j] = i[k][j] * (1 + ((s[k][j] * math.cos(h[k][j])) / (math.cos(pi/3 - h[k][j]))));
+R[k][j] = 3 * i[k][j] - (G[k][j] + B[k][j]);
+
+RGB = numpy.zeros([len(R), len(R[0]), 3])
+RGB[:, :, 0] = R;
+RGB[:, :, 1] = B;
+RGB[:, :, 2] = G;
+
+return RGB
+
+
+opt = parser.parse_args()
+cuda = opt.cuda
+
+if cuda:
+print("=> use gpu id: '{}'".format(opt.gpus))
+os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpus
+if not torch.cuda.is_available():
+raise Exception("No GPU found or Wrong gpu id, please run without --cuda")
+
+model = torch.load(opt.model, map_location=lambda storage, loc: storage, pickle_module=pickle)["model"]
+
+im_gt_rgb = imread("Set5/" + opt.image + ".png", mode="RGB")
+im_b_rgb = imread("Set5/" + opt.image + "_scale_" + str(opt.scale) + ".png", mode="RGB")
+
+print(im_gt_rgb)
+
+# make rgb to shi function
+im_gt_hsi = RGB2HSI(im_gt_rgb)  # not needed...
+im_b_hsi = RGB2HSI(im_b_rgb)  # need to make full high resolution hsi img
+
+# RGB to HSI and get I data
+
+
+im_gt_i = im_gt_hsi[:, :, 3]
+im_b_i = im_b_hsi[:, :, 3]
+
+psnr_bicubic = PSNR(im_gt_i, im_b_i,shave_border=opt.scale)
+
+im_input = im_b_i
+
+im_input = Variable(torch.from_numpy(im_input).float()).view(1, -1, im_input.shape[0], im_input.shape[1])
+
+if cuda:
+model = model.cuda()
+im_input = im_input.cuda()
+else:
+model = model.cpu()
+
+start_time = time.time()
+out = model(im_input)
+elapsed_time = time.time() - start_time
+
+out = out.cpu()
+
+im_h_i = out.data[0].numpy().astype(np.float32)
+
+# im_h_y = im_h_y * 255.
+im_h_i[im_h_i < 0] = 0
+im_h_i[im_h_i > 255.] = 255.
+
+psnr_predicted = PSNR(im_gt_i, im_h_i[0,:,:], shave_border=opt.scale)
+
+
+# have to make HSI to RGB
+im_h = HSI2RGB(im_h_i[0, :, :], im_b_hsi)
+im_gt = im_gt_rgb
+im_b = im_b_rgb
+
+print("im_gt",im_gt)
+print("im_h",im_h)
+print("im_b",im_b)
+
+'''
+im_h = np.array(im_h)
+im_gt = np.array(im_gt)
+im_b = np.array(im_b)
+'''
+print("Scale=",opt.scale)
+print("PSNR_predicted=", psnr_predicted)
+print("PSNR_bicubic=", psnr_bicubic)
+print("It takes {}s for processing".format(elapsed_time))
+
+
+im_b = Image.fromarray(im_b.astype('uint8'))
+im_gt = Image.fromarray(im_gt.astype('uint8'))
+im_h = Image.fromarray(im_h.astype('uint8'))
+
+# svimg=im.fromarray(data.astype('uint8'))
+
+
+im_b.save("inputBicu.png")
+im_gt.save("groundTruth.png")
+im_h.save("vdsrOutput.png")
 
 
 
 
+fig = plt.figure()
+ax = plt.subplot("131")
+ax.imshow(im_gt)
+ax.set_title("GT_I")
 
+ax = plt.subplot("132")
+ax.imshow(im_b)
+ax.set_title("Input(bicubic)_I")
+
+ax = plt.subplot("133")
+ax.imshow(im_h)
+ax.set_title("high resolution I")
+plt.show()
+~~~  
+하지만, 두가지 문제점 및 의문사항이 존재한다.  
+1. 흑백사진을 input으로 넣으면, 검정색 결과가 나온다. 컬러이미지에서도 흑백으로 판단되는 부분은 검정색이 된다.
+2. 일부 부분 색상의 변화가 생긴다. G,B의 문제인 것 같은데, 3번과 함께 해결하면 될 것 같다.
+3. 코드가 잘 돌아가기는 하나, hsi to rgb에서 구한 G,B값을 바꾼 경우 잘 돌아간다. 코드가 잘못되었나..?
+4. HSI성분을 배열로 나타낼 때, 1,2,3으로 나타내는데, 0은 어떤 data인가?
